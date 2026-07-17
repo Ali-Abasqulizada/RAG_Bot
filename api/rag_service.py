@@ -133,7 +133,13 @@ def answer_legal_query(query: str) -> dict:
         
         vector_data = response.json()
         query_vector = vector_data[0] if isinstance(vector_data[0], list) else vector_data
-
+        uri = os.environ.get("ZILLIZ_URI")
+        token = os.environ.get("ZILLIZ_TOKEN")
+    
+    # Əgər dəyişənlər boşdursa, bunu loglarda göstərək
+        if not uri or not token:
+            print(f"XƏTA: ZILLIZ_URI və ya ZILLIZ_TOKEN tapılmadı! URI: {uri}, Token: {bool(token)}")
+            return {"answer": f"Texniki xəta: Konfiqurasiya tapılmadı. XƏTA: ZILLIZ_URI və ya ZILLIZ_TOKEN tapılmadı! URI: {uri}, Token: {bool(token)}", "sources": []}
         # 2. Vektorla Zilliz (Milvus) bazasında axtarış etmək
         client = MilvusClient(
             uri=os.environ.get("ZILLIZ_URI"),
