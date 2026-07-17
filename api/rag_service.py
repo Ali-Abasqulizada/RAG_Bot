@@ -121,7 +121,7 @@ def answer_legal_query(query: str) -> dict:
     try:
         # 1. Sualı vektorlara çevirmək (Hugging Face Cloud API vasitəsilə)
         hf_token = os.environ.get("HF_TOKEN")
-        hf_api_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/BAAI/bge-m3"
+        hf_api_url = "https://router.huggingface.co/hf-inference/models/BAAI/bge-m3/pipeline/feature-extraction"
         
         response = requests.post(
             hf_api_url,
