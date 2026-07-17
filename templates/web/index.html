@@ -80,16 +80,15 @@
             if (welcomeScreen) welcomeScreen.style.display = 'none';
 
             appendUserMessage(text);
-
             userInput.value = '';
             userInput.style.height = 'auto';
-
             toggleInput(false);
 
             const botContainer = appendBotSkeleton();
 
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/ask/', {
+                // DOĞRU: Lokal URL silindi, birbaşa nisbi yol yazıldı
+                const response = await fetch('/api/ask/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query: text })
@@ -204,11 +203,11 @@
 
             const fileName = docName.split('\\').pop();
             const bodyEl = viewerEl.querySelector('.v-body');
-
             const closeBtn = viewerEl.querySelector('.btn-close');
             const enlargeBtn = viewerEl.querySelector('.btn-enlarge');
 
-            const baseUrl = `http://127.0.0.1:8000/documents/${encodeURIComponent(fileName)}#page=${page}&view=FitH`;
+            // DOĞRU: İframe üçün də lokal URL təmizləndi
+            const baseUrl = `/documents/${encodeURIComponent(fileName)}#page=${page}&view=FitH`;
 
             closeBtn.onclick = () => {
                 viewerEl.classList.remove('active', 'fullscreen');
@@ -229,7 +228,6 @@
             };
 
             bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=0&navpanes=0"></iframe>`;
-
             setTimeout(() => { scrollToBottom(); }, 100);
         }
 

@@ -117,7 +117,7 @@ import requests
 from pymilvus import MilvusClient
 from openai import OpenAI
 
-def answer_legal_query(query: str) -> str:
+def answer_legal_query(query: str) -> dict:
     try:
         # 1. Sualı vektorlara çevirmək (Hugging Face Cloud API vasitəsilə)
         hf_token = os.environ.get("HF_TOKEN")
@@ -131,7 +131,6 @@ def answer_legal_query(query: str) -> str:
         response.raise_for_status()
         
         vector_data = response.json()
-        # Bəzən API iç-içə siyahı qaytarır, onu düzəldirik
         query_vector = vector_data[0] if isinstance(vector_data[0], list) else vector_data
 
         # 2. Vektorla Zilliz (Milvus) bazasında axtarış etmək
@@ -140,39 +139,45 @@ def answer_legal_query(query: str) -> str:
             token=os.environ.get("ZILLIZ_TOKEN")
         )
         
-        # DİQQƏT: Öz Zilliz kolleksiya adınızı bura yazın (məsələn: "legal_docs")
         COLLECTION_NAME = "az_law" 
         
         search_results = client.search(
             collection_name=COLLECTION_NAME,
             data=[query_vector],
-            limit=3, # Ən uyğun 3 sənədi tap
-            output_fields=["text"] # Langchain adətən mətni "text" adlı sahədə saxlayır
+            limit=6, # Ən uyğun 6 sənədi tapır (Köhnə tənzimləməyə uyğun)
+            output_fields=["text", "source", "page"] # Mənbə və səhifəni də bazadan çəkirik
         )
 
-        # Tapılan mətnləri bir araya yığmaq
         contexts = []
+        sources = []
+        
         for hits in search_results:
             for hit in hits:
-                # Əgər mətniniz başqa addadırsa (məsələn "page_content"), buranı dəyişin
-                contexts.append(hit["entity"]["text"]) 
+                entity = hit["entity"]
+                contexts.append(entity.get("text", ""))
+                sources.append({
+                    "source": entity.get("source", "Unknown"),
+                    "page": entity.get("page", "N/A")
+                })
                 
         context_text = "\n\n---\n\n".join(contexts)
 
-        # 3. Tapılan məlumatı Cerebras (və ya Groq) süni intellektinə göndərib cavab almaq
+        # 3. Tapılan məlumatı Cerebras AI-a göndərib cavab almaq
         llm_client = OpenAI(
             base_url="https://api.cerebras.ai/v1",
             api_key=os.environ.get("CEREBRAS_API_KEY")
         )
         
-        prompt = f"""Sən köməkçi bir hüquq məsləhətçisisən. İstifadəçinin sualına YALNIZ aşağıdakı kontekstdəki məlumatlara əsasən cavab ver.
-        
-        Kontekst (Bazada tapılan sənədlər):
-        {context_text}
-        
-        Sual:
-        {query}
-        """
+        prompt = f"""Sən Azərbaycan qanunvericiliyi üzrə ixtisaslaşmış peşəkar hüquq məsləhətçisisən. 
+İstifadəçinin sualını cavablandırmaq üçün yalnız aşağıda təqdim olunan sənədlərdən (Kontekst) istifadə et. 
+Əgər verilən kontekstdə sualın cavabı yoxdursa, bunu uydurma və sadəcə 'Təqdim olunan sənədlərdə bu barədə məlumat yoxdur' de.
+
+Kontekst:
+{context_text}
+
+Sual:
+{query}
+"""
 
         llm_response = llm_client.chat.completions.create(
             model="gpt-oss-120b",
@@ -183,7 +188,14 @@ def answer_legal_query(query: str) -> str:
             temperature=0.3
         )
 
-        return llm_response.choices[0].message.content
+        answer = llm_response.choices[0].message.content
+        
+        # Əgər bazada məlumat tapılmayıbsa mənbələri gizlət
+        if "məlumat yoxdur" in answer.lower():
+            sources = []
+
+        # Frontend-in tam olaraq gözlədiyi data strukturu
+        return {"answer": answer, "sources": sources}
 
     except Exception as e:
-        return f"Xəta baş verdi: {str(e)}"
+        return {"answer": f"Xəta baş verdi: {str(e)}", "sources": []}
