@@ -5,7 +5,7 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 from pymilvus import MilvusClient
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 
 # from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
@@ -25,8 +25,9 @@ client = MilvusClient(
     token=os.environ.get("ZILLIZ_TOKEN"),
 )
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-m3", model_kwargs={"device": "cpu"}
+embeddings = HuggingFaceEndpointEmbeddings(
+    model="BAAI/bge-m3",
+    huggingfacehub_api_token=os.environ.get("HF_TOKEN")
 )
 
 # llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, api_key=_GROQ_API_KEY)
