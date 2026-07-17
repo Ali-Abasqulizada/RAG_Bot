@@ -139,3 +139,5 @@ MEDIA_ROOT = r"C:\Users\user\Desktop\Docx"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+DEBUG = False

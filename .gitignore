@@ -333,7 +333,7 @@ db_docker
 redisdb/
 
 
-# config/settings/dev.py
+config/settings/dev.py
 #config/settings/pro.example.py
 #config/settings/dev.example.py
 

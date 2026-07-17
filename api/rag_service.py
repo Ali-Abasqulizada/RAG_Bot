@@ -1,7 +1,7 @@
 import os
 
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
+# os.environ["HF_HUB_OFFLINE"] = "1"
+# os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 from pymilvus import MilvusClient
 from langchain_core.documents import Document
