@@ -1,0 +1,1 @@
+from apps.core.models.time_stamped import TimeStampedModel

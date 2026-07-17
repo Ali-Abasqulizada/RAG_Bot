@@ -1,0 +1,251 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="az">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notary AI - Qanunvericilik</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+
+<body>
+
+    <header class="top-header">
+        <div class="logo-container">
+            <div class="logo-icon"><i data-lucide="scale" style="width: 20px; height: 20px;"></i></div>
+            <div class="logo-title">Notary AI</div>
+            <div class="logo-subtitle">Notariusun hüquqi köməkçisi</div>
+        </div>
+    </header>
+
+    <main class="chat-container" id="chat-scroll">
+        <div class="chat-width-wrapper" id="chat-wrapper">
+
+            <div class="welcome-screen" id="welcome-screen">
+                <div class="welcome-icon"><i data-lucide="book-open" style="width: 32px; height: 32px;"></i></div>
+                <div class="welcome-title">Notary AI-ya xoş gəldiniz</div>
+                <div class="welcome-subtitle">Notariat hüquqi məsələləriniz üzrə metodiki tövsiyələrdən cavab alın</div>
+
+                <div class="chips-grid">
+                    <div class="chip" onclick="setInput('Vəsiyyətnamə necə tərtib edilir?')">Vəsiyyətnamə necə tərtib
+                        edilir?</div>
+                    <div class="chip" onclick="setInput('Etibarnamənin etibarlılıq müddəti nə qədərdir?')">Etibarnamənin
+                        etibarlılıq müddəti</div>
+                    <div class="chip" onclick="setInput('Daşınmaz əmlak alqı-satqısı qaydaları')">Daşınmaz əmlak
+                        alqı-satqısı</div>
+                    <div class="chip" onclick="setInput('Mirasın qəbulu və rədd edilməsi qaydaları')">Mirasın qəbulu
+                        qaydaları</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="input-footer">
+        <div class="input-box">
+            <textarea id="user-input" placeholder="Hüquqi sualınızı yazın..." rows="1"></textarea>
+            <button class="send-btn" id="send-btn"><i data-lucide="send"
+                    style="width: 18px; margin-left: -2px;"></i></button>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        const chatWrapper = document.getElementById('chat-wrapper');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatScroll = document.getElementById('chat-scroll');
+
+        // Auto-resize textarea logic
+        userInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        function setInput(text) {
+            userInput.value = text;
+            userInput.style.height = 'auto';
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            if (welcomeScreen) welcomeScreen.style.display = 'none';
+
+            appendUserMessage(text);
+
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            toggleInput(false);
+
+            const botContainer = appendBotSkeleton();
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/ask/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: text })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    fillBotMessage(botContainer, data.answer, data.sources);
+                } else {
+                    const errorStr = data.error ? String(data.error) : "";
+                    const timeMatch = errorStr.match(/Please try again in (.*?)\./);
+
+                    if (timeMatch) {
+                        fillBotMessage(botContainer, `⏳ Gündəlik limit aşıldı. Zəhmət olmasa ${timeMatch[1]} gözləyin.`);
+                    } else {
+                        fillBotMessage(botContainer, `Xəta: ${data.error}`);
+                    }
+                }
+            } catch (error) {
+                fillBotMessage(botContainer, "Bağlantı xətası. Django serverinin aktiv olduğuna əmin olun.");
+            } finally {
+                toggleInput(true);
+            }
+        }
+
+        function toggleInput(enabled) {
+            userInput.disabled = !enabled;
+            sendBtn.disabled = !enabled;
+            if (enabled) userInput.focus();
+        }
+
+        function appendUserMessage(text) {
+            const row = document.createElement('div');
+            row.className = 'message-row user';
+            row.innerHTML = `<div class="bubble">${text}</div><div class="avatar user" style="margin-left: 16px;">S</div>`;
+            chatWrapper.appendChild(row);
+            scrollToBottom();
+        }
+
+        function appendBotSkeleton() {
+            const row = document.createElement('div');
+            row.className = 'message-row bot';
+
+            const viewerId = 'viewer-' + Date.now();
+
+            row.innerHTML = `
+                <div class="avatar bot">N</div>
+                <div class="bot-flex-container">
+                    <div class="bot-bubble-card">
+                        <div class="text-body">
+                            <div class="typing-pulse"><span></span><span></span><span></span></div>
+                        </div>
+                        <div class="sources-section" style="display:none;">
+                            <div class="sources-title">MƏNBƏLƏR</div>
+                            <div class="sources-list"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="inline-viewer" id="${viewerId}">
+                        <div class="v-body" style="width: 100%; height: 100%;"></div>
+                        <button class="viewer-overlay-btn btn-close" title="Bağla"><i data-lucide="x" style="width: 14px;"></i></button>
+                        <button class="viewer-overlay-btn btn-enlarge" title="Böyüt">Böyüt</button>
+                    </div>
+                </div>
+            `;
+            chatWrapper.appendChild(row);
+            lucide.createIcons();
+            scrollToBottom();
+            return { row, viewerId };
+        }
+
+        function fillBotMessage(containerObj, text, sources) {
+            const textBody = containerObj.row.querySelector('.text-body');
+            const sourcesSection = containerObj.row.querySelector('.sources-section');
+            const sourcesList = containerObj.row.querySelector('.sources-list');
+            const viewer = document.getElementById(containerObj.viewerId);
+
+            textBody.innerHTML = text.replace(/\n/g, '<br>');
+
+            const isNoInfo = text.toLowerCase().includes('məlumat yoxdur') ||
+                text.toLowerCase().includes('məlumat tapılmadı');
+
+            if (sources && sources.length > 0 && !isNoInfo) {
+                sourcesSection.style.display = 'block';
+                sources.forEach(src => {
+                    const cleanFileName = src.source.split('\\').pop().replace('.pdf', '');
+
+                    let badgeText = "Sənəd";
+                    let displayText = cleanFileName;
+                    const yearMatch = cleanFileName.match(/^(\d{4})\s*-\s*(.*)/);
+                    if (yearMatch) {
+                        badgeText = yearMatch[1];
+                        displayText = yearMatch[2];
+                    }
+
+                    const row = document.createElement('div');
+                    row.className = 'source-row';
+                    row.innerHTML = `
+                        <div class="source-badge">${badgeText}</div>
+                        <div class="source-text">${displayText}</div>
+                    `;
+
+                    row.onclick = () => openInlineViewer(viewer, src.source, src.page);
+                    sourcesList.appendChild(row);
+                });
+            }
+            scrollToBottom();
+        }
+
+        async function openInlineViewer(viewerEl, docName, page) {
+            viewerEl.classList.add('active');
+
+            const fileName = docName.split('\\').pop();
+            const bodyEl = viewerEl.querySelector('.v-body');
+
+            const closeBtn = viewerEl.querySelector('.btn-close');
+            const enlargeBtn = viewerEl.querySelector('.btn-enlarge');
+
+            const baseUrl = `http://127.0.0.1:8000/documents/${encodeURIComponent(fileName)}#page=${page}&view=FitH`;
+
+            closeBtn.onclick = () => {
+                viewerEl.classList.remove('active', 'fullscreen');
+                enlargeBtn.innerText = 'Böyüt';
+                bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=0&navpanes=0"></iframe>`;
+            };
+
+            enlargeBtn.onclick = () => {
+                viewerEl.classList.toggle('fullscreen');
+
+                if (viewerEl.classList.contains('fullscreen')) {
+                    enlargeBtn.innerText = 'Kiçilt';
+                    bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
+                } else {
+                    enlargeBtn.innerText = 'Böyüt';
+                    bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=0&navpanes=0"></iframe>`;
+                }
+            };
+
+            bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=0&navpanes=0"></iframe>`;
+
+            setTimeout(() => { scrollToBottom(); }, 100);
+        }
+
+        function scrollToBottom() {
+            chatScroll.scrollTop = chatScroll.scrollHeight;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        userInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+
+</html>
