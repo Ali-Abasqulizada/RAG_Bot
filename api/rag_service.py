@@ -26,7 +26,7 @@ client = MilvusClient(
 )
 
 embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-m3", model_kwargs={"device": "cuda"}
+    model_name="BAAI/bge-m3", model_kwargs={"device": "cpu"}
 )
 
 # llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1, api_key=_GROQ_API_KEY)
