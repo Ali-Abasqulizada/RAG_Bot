@@ -116,6 +116,7 @@ import os
 import requests
 from pymilvus import MilvusClient
 from openai import OpenAI
+import traceback
 
 def answer_legal_query(query: str) -> dict:
     try:
@@ -198,4 +199,9 @@ Sual:
         return {"answer": answer, "sources": sources}
 
     except Exception as e:
-        return {"answer": f"Xəta baş verdi: {str(e)}", "sources": []}
+        # Xətanın bütün detallarını Render loglarına yazdırır
+        print("XƏTANIN DETALLI TƏHLİLİ:")
+        print(traceback.format_exc())
+        
+        # Ekrandakı mətnə isə xətanın boş qalmayan qəti tipini (repr) qaytarır
+        return {"answer": f"Texniki xəta: {repr(e)}", "sources": []}
