@@ -203,37 +203,44 @@
         }
 
         async function openInlineViewer(viewerEl, docName, page) {
-            viewerEl.classList.add('active');
-
             const fileName = docName.split(/[\\/]/).pop();
+            const baseUrl = `/documents/${encodeURIComponent(fileName)}#page=${page}`;
+
+            // 1. Detect if the user is on an iOS device (iPhone or iPad)
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+
+            // 2. If it is iOS, open the document natively in a new Safari tab
+            if (isIOS) {
+                window.open(baseUrl, '_blank');
+                return; // Stop the rest of the inline viewer code from running
+            }
+
+            // 3. For Windows, Mac, and Android, run the normal inline viewer
+            viewerEl.classList.add('active');
             const bodyEl = viewerEl.querySelector('.v-body');
             const closeBtn = viewerEl.querySelector('.btn-close');
             const enlargeBtn = viewerEl.querySelector('.btn-enlarge');
 
-            // Set toolbar=1 so Android/Windows/Mac can see the PDF controls
-            const baseUrl = `/documents/${encodeURIComponent(fileName)}#page=${page}&view=FitH`;
+            const iframeSrc = `${baseUrl}&view=FitH&toolbar=1&navpanes=0`;
 
             closeBtn.onclick = () => {
                 viewerEl.classList.remove('active', 'fullscreen');
                 enlargeBtn.innerText = 'Böyüt';
-                // Reset to default view
-                bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
+                bodyEl.innerHTML = `<iframe src="${iframeSrc}"></iframe>`;
             };
 
             enlargeBtn.onclick = () => {
                 viewerEl.classList.toggle('fullscreen');
-
                 if (viewerEl.classList.contains('fullscreen')) {
                     enlargeBtn.innerText = 'Kiçilt';
-                    bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
                 } else {
                     enlargeBtn.innerText = 'Böyüt';
-                    bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
                 }
+                bodyEl.innerHTML = `<iframe src="${iframeSrc}"></iframe>`;
             };
 
-            // Initial load
-            bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
+            bodyEl.innerHTML = `<iframe src="${iframeSrc}"></iframe>`;
             setTimeout(() => { scrollToBottom(); }, 100);
         }
 
