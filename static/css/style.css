@@ -27,7 +27,8 @@
 }
 
 /* Fix 100vh issue on mobile browsers (Safari/Chrome) */
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     height: 100%;
@@ -343,25 +344,38 @@ body {
 }
 
 .btn-close {
-    bottom: 20px;
-    left: 20px;
+    top: 16px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
     width: 34px;
     height: 34px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    /* Shadow to stand out against PDF */
 }
 
 .btn-enlarge {
-    bottom: 20px;
-    right: 20px;
+    top: 16px;
+    left: 16px;
+    bottom: auto;
+    right: auto;
     padding: 8px 18px;
     border-radius: 30px;
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Prevent buttons from hiding under the iPhone Notch in fullscreen */
+.inline-viewer.fullscreen .btn-close,
+.inline-viewer.fullscreen .btn-enlarge {
+    margin-top: max(10px, env(safe-area-inset-top));
 }
 
 .inline-viewer.fullscreen {
@@ -482,25 +496,48 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes slideIn {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes pulse {
-    0%, 80%, 100% {
+
+    0%,
+    80%,
+    100% {
         transform: scale(0.4);
         opacity: 0.3;
     }
+
     40% {
         transform: scale(1);
         opacity: 1;

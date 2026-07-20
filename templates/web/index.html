@@ -4,7 +4,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Notary AI - Qanunvericilik</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -31,10 +32,14 @@
                 <div class="welcome-subtitle">Notariat hüquqi məsələləriniz üzrə metodiki tövsiyələrdən cavab alın</div>
 
                 <div class="chips-grid">
-                    <div class="chip" onclick="setInput('Vəsiyyətnamə necə tərtib edilir?')">Vəsiyyətnamə necə tərtib edilir?</div>
-                    <div class="chip" onclick="setInput('Etibarnamənin etibarlılıq müddəti nə qədərdir?')">Etibarnamənin etibarlılıq müddəti</div>
-                    <div class="chip" onclick="setInput('Daşınmaz əmlak alqı-satqısı qaydaları')">Daşınmaz əmlak alqı-satqısı</div>
-                    <div class="chip" onclick="setInput('Mirasın qəbulu və rədd edilməsi qaydaları')">Mirasın qəbulu qaydaları</div>
+                    <div class="chip" onclick="setInput('Vəsiyyətnamə necə tərtib edilir?')">Vəsiyyətnamə necə tərtib
+                        edilir?</div>
+                    <div class="chip" onclick="setInput('Etibarnamənin etibarlılıq müddəti nə qədərdir?')">Etibarnamənin
+                        etibarlılıq müddəti</div>
+                    <div class="chip" onclick="setInput('Daşınmaz əmlak alqı-satqısı qaydaları')">Daşınmaz əmlak
+                        alqı-satqısı</div>
+                    <div class="chip" onclick="setInput('Mirasın qəbulu və rədd edilməsi qaydaları')">Mirasın qəbulu
+                        qaydaları</div>
                 </div>
             </div>
 
@@ -203,12 +208,14 @@
             const closeBtn = viewerEl.querySelector('.btn-close');
             const enlargeBtn = viewerEl.querySelector('.btn-enlarge');
 
+            // Set toolbar=1 so Android/Windows/Mac can see the PDF controls
             const baseUrl = `/documents/${encodeURIComponent(fileName)}#page=${page}&view=FitH`;
 
             closeBtn.onclick = () => {
                 viewerEl.classList.remove('active', 'fullscreen');
                 enlargeBtn.innerText = 'Böyüt';
-                bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=0&navpanes=0"></iframe>`;
+                // Reset to default view
+                bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
             };
 
             enlargeBtn.onclick = () => {
@@ -219,11 +226,12 @@
                     bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
                 } else {
                     enlargeBtn.innerText = 'Böyüt';
-                    bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=0&navpanes=0"></iframe>`;
+                    bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
                 }
             };
 
-            bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=0&navpanes=0"></iframe>`;
+            // Initial load
+            bodyEl.innerHTML = `<iframe src="${baseUrl}&toolbar=1&navpanes=0"></iframe>`;
             setTimeout(() => { scrollToBottom(); }, 100);
         }
 
