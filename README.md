@@ -1,55 +1,70 @@
-RAG -> Retrieval-Augmented Generation
+# Retrieval-Augmented Generation (RAG) Project
 
-RAG, which stands for Retrieval-Augmented Generation, is an AI framework that combines 
-the strengths of traditional information retrieval systems (such as search and databases) 
-with the capabilities of generative large language models (LLMs).
+RAG, which stands for Retrieval-Augmented Generation, is an AI framework that combines the strengths of traditional information retrieval systems, such as search and databases, with the capabilities of generative large language models (LLMs).
 
-How to run locally...
+Follow the instructions below to configure and run the application locally.
 
-STEP 1.
+## Step 1: Environment Setup
 
-Open project on Visual Studio Code (or any other compiler, Ideally which one you are most familiar with)
+1. Open the project in Visual Studio Code or your preferred code editor.
+2. Open a terminal and create a virtual environment by running the following command, which will create a folder named `env`:
+   ```bash
+   python -m venv env
+   ```
+3. Activate your virtual environment:
+   * Windows: `.\env\Scripts\activate` 
+   * Mac/Linux: `source env/bin/activate`
+   * *Note: To exit the environment at any time, simply type `deactivate` in the terminal.*
+4. Install the required project dependencies: 
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Then create your virtual environment by using this command `python -m venv env`. This command will create 
-folder named "env". Then activate your virtual environment: `.\env\Scripts\activate`. 
+## Step 2: Environment Variables
 
-Note: if you want to close your environment, just write `deactivate` terminal
+Create a file named `.env` in the root directory of your project. This file will store all your secure tokens. The application utilizes the following free services, which you will need to register for to obtain the necessary keys:
 
-In next step, we need to install dependencies aka libraries.
+* **`GROQ_API_KEY`**: The token for the primary generation model. Go to https://console.groq.com, sign in, navigate to "API keys", and generate a key.
+* **`CEREBRAS_API_KEY`**: The token for the secondary fallback model. Go to https://cloud.cerebras.ai, sign in, navigate to "API keys", and generate a key.
+* **`ZILLIZ_URI` & `ZILLIZ_TOKEN`**: RAG projects require Vector databases rather than standard relational databases. Standard databases do not understand semantic context (for example, recognizing the relationship between "kitten", "cat", and "tiger"), whereas Vector databases process the actual meaning of words. To avoid the computational overhead of local deployment, this project uses the hosted Milvus database via Zilliz. Go to https://cloud.zilliz.com, create a project, and copy your "Public endpoint" (URI) and token.
+* **`HF_TOKEN`**: This token is required to utilize Hugging Face's "BAAI" model, which converts queries into vector embeddings. Go to https://huggingface.co, sign in, navigate to settings, select tokens, and create an access token.
+* **`SECRET_KEY`**: Your unique Django security key.
 
-`pip install > requirements.txt`
+## Step 3: Django Initialization
 
-This command will create file called "reqirements.txt" and all the dependencies will be located there. 
+Run the following commands to prepare the Django backend:
 
-STEP 2.
+1. Gather all static CSS and JavaScript files into a `staticfiles` directory:
+   ```bash
+   python manage.py collectstatic
+   ```
+2. Create the default SQLite database to initialize Django's architecture and resolve terminal warnings:
+   ```bash
+   python manage.py migrate
+   ```
 
-Create a file called ".env". All the tokens will be located there. Currently this application uses these. These are all free options:
+## Step 4: Vector Database Ingestion
 
-`GROQ_API_KEY` -> Token of first model that we are going to use in our project. Go to https://console.groq.com, sign in then click on "API keys". There you will create your api key. 
-`CEREBRAS_API_KEY` -> Token of second model. Go to https://cloud.cerebras.ai, sign in then click on "API keys". There you will create your api key. 
-`ZILLIZ_URI`, `ZILLIZ_TOKEN` -> For RAG projects, we have to use Vector databases. Because if we use normal Relational or Non-relational databases and search for kitten in the database with query, it will not return Cat or Tiger on the DB. Because they don't understand the real meaning of words. However, Vector databases understand words. I will not explain how. I suggest you to search a bit if you don't know about that. 
+Before interacting with the AI, you must populate the vector database with your contextual documents.
 
-Having Database on local pc, could be expensive. Also if you want to deploy your project on free of charge, this will cause you problem in the future. We could use "docker" but again, in deployment process, it will cause us problem. So we can use Milvus vector database on https://cloud.zilliz.com. Go to that web site, create your project then get your "Public endpoint" and "token". 
-`HF_TOKEN` -> This token will be required for "BAAI" model of Hugging Face company. This will help us to convert our query to vectors. In order to get this token you need to go https://huggingface.co site. Sign in and go to settings then tokens, there you will create your access token. 
-`SECRET_KEY` -> This will be your django secret key.
+1. Create a folder named `media` in the project root directory.
+2. Add all of your reference documents into the `media` folder. Ensure all files are in PDF format.
+3. Run the ingestion script located in the `api` folder to upload and embed the documents into your Zilliz cloud database:
+   ```bash
+   python api/create.py
+   ```
+4. **Verification (Optional but Recommended):**
+   * Test the database connection by running: `python api/test_database_conn.py`
+   * Test the Hugging Face token connection by running: `python api/test_hf_conn.py`
 
-STEP 3.
+## Step 5: Launch the Application
 
-Create static files: `python manage.py migrate`. This will create folder named staticfiles. There will be located your css files. 
-Create sqlite database: `python manage.py migrate`, We will not use this in our project, but in order to remove warnigns we must do that.
+Once the database is populated, start the local development server:
 
-STEP 4. 
+```bash
+python manage.py runserver
+```
 
-In this step we will create Milvus database on the internet. But before that we need to create folder named "media". Then add you documents (All documents should be PDf) into media folder. 
+Congratulations, your personal RAG application is now running.
 
-Then just run "create.py" in "api" folder: `python.exe api/create.py`.
-
-This will create our database on the zilliz. Ideally you should run "test_database_conn.py" file in the same folder to check the connection: `python.exe api/test_database_conn.py`.
-
-Note: Don't forget to check if HF is working or not. Just run "test_hf_conn.py" file: `python.exe api/test_hf_conn.py`.
-
-STEP 5.
-
-Finally, it is time to run: `python.exe manage.py runserver`.
-
-CONGRATULATIONS, now you have a personal RAG project.
+Checkout the project: https://web-production-05c50.up.railway.app/
