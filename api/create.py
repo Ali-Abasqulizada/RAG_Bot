@@ -1,28 +1,64 @@
 import os
-
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-
+import time
+import requests
+from dotenv import load_dotenv
 from pymilvus import MilvusClient
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, PyMuPDFLoader
 from tqdm import tqdm
 
-client = MilvusClient(
-    uri="https://in03-7cfe653a6914015.serverless.aws-eu-central-1.cloud.zilliz.com",
-    token="c3ca6b3a38b4ff1cf97a379aec971766e6f31f1cd532f0275e0c079db5bef2dcf4e5f1ce3417677190842fab698299bfab93d8e5"
-)
+load_dotenv()
 
-if client.has_collection(collection_name="az_law"):
-    client.drop_collection(collection_name="az_law")
+ZILLIZ_URI = os.environ.get("ZILLIZ_URI")
+ZILLIZ_TOKEN = os.environ.get("ZILLIZ_TOKEN")
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
+if not ZILLIZ_URI or not ZILLIZ_TOKEN:
+    raise ValueError("Missing 'ZILLIZ_URI' or 'ZILLIZ_TOKEN' in environment variables.")
+
+if not HF_TOKEN:
+    raise ValueError("Missing 'HF_TOKEN' in environment variables.")
+
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-m3/pipeline/feature-extraction"
+HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
+
+
+def get_hf_embeddings(texts: list[str]) -> list[list[float]]:
+    response = requests.post(
+        HF_API_URL,
+        headers=HF_HEADERS,
+        json={"inputs": texts, "options": {"wait_for_model": True}},
+        timeout=30,
+    )
+    if response.status_code != 200:
+        raise RuntimeError(f"Hugging Face API Error ({response.status_code}): {response.text}")
+    return response.json()
+
+print("Connecting to Zilliz Database...")
+client = MilvusClient(uri=ZILLIZ_URI, token=ZILLIZ_TOKEN)
+
+COLLECTION_NAME = "az_law"
+
+if client.has_collection(collection_name=COLLECTION_NAME):
+    print(f"Dropping existing collection '{COLLECTION_NAME}'...")
+    client.drop_collection(collection_name=COLLECTION_NAME)
+
+print(f"Creating collection '{COLLECTION_NAME}'...")
 client.create_collection(
-    collection_name="az_law", dimension=1024, metric_type="COSINE", auto_id=True
+    collection_name=COLLECTION_NAME,
+    dimension=1024,
+    metric_type="COSINE",
+    auto_id=True,
 )
 
-base_dir = r"C:\Users\user\Desktop\Docx"
-print("Loading legal PDFs...")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+base_dir = os.environ.get("MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
+
+if not os.path.exists(base_dir):
+    os.makedirs(base_dir, exist_ok=True)
+    print(f"Created folder: '{base_dir}'. Place your PDF files here.")
+
+print(f"Loading legal PDFs from '{base_dir}'...")
 
 pdf_docs = DirectoryLoader(
     base_dir,
@@ -32,30 +68,47 @@ pdf_docs = DirectoryLoader(
     use_multithreading=True,
 ).load()
 
+if not pdf_docs:
+    print("No PDF files found in the directory.")
+    exit(0)
+
 for doc in pdf_docs:
     doc.metadata = {k: v for k, v in doc.metadata.items() if k in {"source", "page"}}
     if "page" in doc.metadata:
         doc.metadata["page"] += 1
+    if "source" in doc.metadata:
+        doc.metadata["source"] = os.path.basename(doc.metadata["source"])
 
 chunks = RecursiveCharacterTextSplitter(
     chunk_size=1000, chunk_overlap=200
 ).split_documents(pdf_docs)
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-m3", model_kwargs={"device": "cuda"}
-)
+print(f"\nProcessing {len(chunks)} text chunks...")
 
-print("\nStarting upload using MilvusClient...")
-for i in tqdm(range(0, len(chunks), 50), desc="Uploading"):
-    batch = chunks[i : i + 50]
+BATCH_SIZE = 16
+
+for i in tqdm(range(0, len(chunks), BATCH_SIZE), desc="Uploading to Zilliz"):
+    batch = chunks[i : i + BATCH_SIZE]
+    texts = [d.page_content for d in batch]
+
+    embeddings = None
+    for attempt in range(3):
+        try:
+            embeddings = get_hf_embeddings(texts)
+            break
+        except Exception as err:
+            if attempt == 2:
+                raise err
+            time.sleep(2)
+
     data = [
         {
             "text": d.page_content,
-            "vector": embeddings.embed_query(d.page_content),
+            "vector": embedding,
             **d.metadata,
         }
-        for d in batch
+        for d, embedding in zip(batch, embeddings)
     ]
-    client.insert(collection_name="az_law", data=data)
+    client.insert(collection_name=COLLECTION_NAME, data=data)
 
-print("\n✅ Successfully uploaded PDFs!")
+print("Successfully embedded and uploaded all PDFs to Zilliz!")

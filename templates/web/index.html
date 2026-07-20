@@ -4,19 +4,20 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Notary AI - Qanunvericilik</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="https://unpkg.com/lucide@latest"></script>
-
 </head>
 
 <body>
 
     <header class="top-header">
         <div class="logo-container">
-            <div class="logo-icon"><i data-lucide="scale" style="width: 20px; height: 20px;"></i></div>
-            <div class="logo-title">Notary AI</div>
+            <div class="logo-title">
+                <span class="logo-icon"><i data-lucide="scale" style="width: 22px; height: 22px;"></i></span>
+                Notary AI
+            </div>
             <div class="logo-subtitle">Notariusun hüquqi köməkçisi</div>
         </div>
     </header>
@@ -30,14 +31,10 @@
                 <div class="welcome-subtitle">Notariat hüquqi məsələləriniz üzrə metodiki tövsiyələrdən cavab alın</div>
 
                 <div class="chips-grid">
-                    <div class="chip" onclick="setInput('Vəsiyyətnamə necə tərtib edilir?')">Vəsiyyətnamə necə tərtib
-                        edilir?</div>
-                    <div class="chip" onclick="setInput('Etibarnamənin etibarlılıq müddəti nə qədərdir?')">Etibarnamənin
-                        etibarlılıq müddəti</div>
-                    <div class="chip" onclick="setInput('Daşınmaz əmlak alqı-satqısı qaydaları')">Daşınmaz əmlak
-                        alqı-satqısı</div>
-                    <div class="chip" onclick="setInput('Mirasın qəbulu və rədd edilməsi qaydaları')">Mirasın qəbulu
-                        qaydaları</div>
+                    <div class="chip" onclick="setInput('Vəsiyyətnamə necə tərtib edilir?')">Vəsiyyətnamə necə tərtib edilir?</div>
+                    <div class="chip" onclick="setInput('Etibarnamənin etibarlılıq müddəti nə qədərdir?')">Etibarnamənin etibarlılıq müddəti</div>
+                    <div class="chip" onclick="setInput('Daşınmaz əmlak alqı-satqısı qaydaları')">Daşınmaz əmlak alqı-satqısı</div>
+                    <div class="chip" onclick="setInput('Mirasın qəbulu və rədd edilməsi qaydaları')">Mirasın qəbulu qaydaları</div>
                 </div>
             </div>
 
@@ -46,9 +43,10 @@
 
     <footer class="input-footer">
         <div class="input-box">
-            <textarea id="user-input" placeholder="Hüquqi sualınızı yazın..." rows="1"></textarea>
-            <button class="send-btn" id="send-btn"><i data-lucide="send"
-                    style="width: 18px; margin-left: -2px;"></i></button>
+            <textarea id="user-input" placeholder="Hüquqi sualınızı yazın..." rows="1" enterkeyhint="send"></textarea>
+            <button class="send-btn" id="send-btn" aria-label="Göndər">
+                <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+            </button>
         </div>
     </footer>
 
@@ -61,10 +59,10 @@
         const sendBtn = document.getElementById('send-btn');
         const chatScroll = document.getElementById('chat-scroll');
 
-        // Auto-resize textarea logic
+        // Auto-resize textarea logic with scroll height tracking
         userInput.addEventListener('input', function () {
             this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
 
         function setInput(text) {
@@ -87,7 +85,6 @@
             const botContainer = appendBotSkeleton();
 
             try {
-                // DOĞRU: Lokal URL silindi, birbaşa nisbi yol yazıldı
                 const response = await fetch('/api/ask/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -104,11 +101,11 @@
                     if (timeMatch) {
                         fillBotMessage(botContainer, `⏳ Gündəlik limit aşıldı. Zəhmət olmasa ${timeMatch[1]} gözləyin.`);
                     } else {
-                        fillBotMessage(botContainer, `Xəta: ${data.error}`);
+                        fillBotMessage(botContainer, `Xəta: ${data.error || 'Server xətası baş verdi.'}`);
                     }
                 }
             } catch (error) {
-                fillBotMessage(botContainer, "Bağlantı xətası. Django serverinin aktiv olduğuna əmin olun.");
+                fillBotMessage(botContainer, "Bağlantı xətası. Serverlə əlaqə saxlanıla bilmədi.");
             } finally {
                 toggleInput(true);
             }
@@ -117,13 +114,13 @@
         function toggleInput(enabled) {
             userInput.disabled = !enabled;
             sendBtn.disabled = !enabled;
-            if (enabled) userInput.focus();
+            if (enabled && window.innerWidth > 768) userInput.focus();
         }
 
         function appendUserMessage(text) {
             const row = document.createElement('div');
             row.className = 'message-row user';
-            row.innerHTML = `<div class="bubble">${text}</div><div class="avatar user" style="margin-left: 16px;">S</div>`;
+            row.innerHTML = `<div class="bubble">${escapeHtml(text)}</div><div class="avatar user">S</div>`;
             chatWrapper.appendChild(row);
             scrollToBottom();
         }
@@ -174,7 +171,7 @@
             if (sources && sources.length > 0 && !isNoInfo) {
                 sourcesSection.style.display = 'block';
                 sources.forEach(src => {
-                    const cleanFileName = src.source.split('\\').pop().replace('.pdf', '');
+                    const cleanFileName = src.source.split(/[\\/]/).pop().replace('.pdf', '');
 
                     let badgeText = "Sənəd";
                     let displayText = cleanFileName;
@@ -201,12 +198,11 @@
         async function openInlineViewer(viewerEl, docName, page) {
             viewerEl.classList.add('active');
 
-            const fileName = docName.split('\\').pop();
+            const fileName = docName.split(/[\\/]/).pop();
             const bodyEl = viewerEl.querySelector('.v-body');
             const closeBtn = viewerEl.querySelector('.btn-close');
             const enlargeBtn = viewerEl.querySelector('.btn-enlarge');
 
-            // DOĞRU: İframe üçün də lokal URL təmizləndi
             const baseUrl = `/documents/${encodeURIComponent(fileName)}#page=${page}&view=FitH`;
 
             closeBtn.onclick = () => {
@@ -233,6 +229,12 @@
 
         function scrollToBottom() {
             chatScroll.scrollTop = chatScroll.scrollHeight;
+        }
+
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, function (s) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s];
+            });
         }
 
         sendBtn.addEventListener('click', sendMessage);
