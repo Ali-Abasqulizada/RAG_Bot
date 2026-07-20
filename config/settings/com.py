@@ -13,7 +13,7 @@ env = environ.Env()
 env.read_env('.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-$3(ik_d_01ov=0q(2uhc)@5q*4a9(uri9y6uoc7b*_iile&k)^'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -130,7 +130,7 @@ STATICFILES_DIRS = [
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/documents/'
-MEDIA_ROOT = r"C:\Users\user\Desktop\Docx"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Default primary key field type
@@ -139,5 +139,3 @@ MEDIA_ROOT = r"C:\Users\user\Desktop\Docx"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
-
-DEBUG = False

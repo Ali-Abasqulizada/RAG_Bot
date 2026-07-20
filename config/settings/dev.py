@@ -1,6 +1,6 @@
 from config.settings.com import *
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -13,4 +13,5 @@ DATABASES = {
 }
 
 
-BASE_URL = 'http://localhost:8000'
+# BASE_URL = 'http://localhost:8000'
+BASE_URL = 'https://rag-bot-b6de.onrender.com'
