@@ -299,6 +299,10 @@ body {
     color: var(--brand-primary);
 }
 
+
+/* ========================================= */
+/* NEW DOCUMENT VIEWER CSS WITH HEADER BAR   */
+/* ========================================= */
 .inline-viewer {
     display: none;
     width: 320px;
@@ -312,11 +316,68 @@ body {
     position: sticky;
     top: 20px;
     align-self: flex-start;
+    flex-direction: column;
 }
 
 .inline-viewer.active {
-    display: block;
+    display: flex;
     animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dedicated Header Bar for Viewer */
+.viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--brand-primary);
+    border-bottom: 2px solid var(--brand-accent);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.viewer-action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.viewer-action-btn.btn-enlarge {
+    color: var(--brand-accent);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid var(--brand-accent);
+    padding: 6px 14px;
+    border-radius: 30px;
+}
+
+.viewer-action-btn.btn-enlarge:hover {
+    background: var(--brand-accent);
+    color: var(--brand-primary);
+}
+
+.viewer-action-btn.btn-close {
+    color: white;
+    padding: 4px;
+    border-radius: 50%;
+}
+
+.viewer-action-btn.btn-close:hover {
+    color: var(--brand-accent);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.v-body {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
 }
 
 .inline-viewer iframe {
@@ -326,68 +387,24 @@ body {
     display: block;
 }
 
-.viewer-overlay-btn {
-    position: absolute;
-    background: var(--bg-card);
-    color: var(--brand-primary);
-    border: 1px solid var(--border-strong);
-    cursor: pointer;
-    z-index: 10;
-    box-shadow: var(--shadow-card);
-    transition: all 0.2s ease;
-}
-
-.viewer-overlay-btn:hover {
-    background: var(--brand-primary);
-    color: var(--brand-accent);
-    border-color: var(--brand-primary);
-}
-
-.btn-close {
-    top: 16px;
-    right: 16px;
-    bottom: auto;
-    left: auto;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    /* Shadow to stand out against PDF */
-}
-
-.btn-enlarge {
-    top: 16px;
-    left: 16px;
-    bottom: auto;
-    right: auto;
-    padding: 8px 18px;
-    border-radius: 30px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* Prevent buttons from hiding under the iPhone Notch in fullscreen */
-.inline-viewer.fullscreen .btn-close,
-.inline-viewer.fullscreen .btn-enlarge {
-    margin-top: max(10px, env(safe-area-inset-top));
-}
-
 .inline-viewer.fullscreen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     border-radius: 0;
     border: none;
-    z-index: 9999;
+    z-index: 99999;
 }
+
+/* Ensure the header isn't hidden under the iPhone Notch in fullscreen */
+.inline-viewer.fullscreen .viewer-header {
+    padding-top: max(10px, env(safe-area-inset-top));
+}
+
+/* ========================================= */
+
 
 /* Fixed footer with safe area support for modern smartphones */
 .input-footer {
