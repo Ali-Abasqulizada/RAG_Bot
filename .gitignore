@@ -338,7 +338,7 @@ config/settings/dev.py
 #config/settings/dev.example.py
 
 
-media/*
+# media/*
 locale/*
 .idea
 django
